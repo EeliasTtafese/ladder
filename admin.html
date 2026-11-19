@@ -31,7 +31,7 @@ var PN={day:"ቀን",month:"ወር",year:"ዓመት"};
 function left(d){return d.expires_at?new Date(d.expires_at)-Date.now():null}
 function state(d){var l=left(d);if(d.status==="revoked")return"🚫 ታግዷል";if(l===null)return"🕓 ፈቃድ የለም";if(l<=0)return"❌ አብቅቷል";return l<=10*864e5?"⚠️ ሊያበቃ ነው":"✅ ንቁ"}
 function leftTxt(d){var l=left(d);if(l===null)return"";if(l<=0)return"አብቅቷል";return l<172800000?Math.ceil(l/36e5)+" ሰዓት ቀሪ":Math.ceil(l/864e5)+" ቀን ቀሪ"}
-async function load(){try{var d=await api("/rest/v1/devices?select=*&order=registered_at.desc");var k=await api("/rest/v1/license_keys?select=device_id,plan,created_at,used_at&order=created_at.desc");KS={};k.forEach(function(x){(KS[x.device_id]=KS[x.device_id]||[]).push(x)});render(d)}catch(e){tok=null;msg("እንደገና ይግቡ");login()}}
+async function load(){try{var ad=await api("/rest/v1/admins?select=user_id");if(!ad.length)msg("⚠️ ይህ መለያ የአስተዳዳሪ ፈቃድ የለውም (በ admins ሰንጠረዥ ውስጥ የለም)። የ schema.sql የመጨረሻውን መስመር በዚህ ኢሜል አስኪደው።");var d=await api("/rest/v1/devices?select=*&order=registered_at.desc");var k=await api("/rest/v1/license_keys?select=device_id,plan,created_at,used_at&order=created_at.desc");KS={};k.forEach(function(x){(KS[x.device_id]=KS[x.device_id]||[]).push(x)});render(d)}catch(e){tok=null;msg("እንደገና ይግቡ");login()}}
 function render(a){var v=$("v");v.innerHTML='<div class="r"><button id="rf">🔄 አድስ</button><input id="sq" placeholder="🔍 ኢሜል፣ ኮድ ወይም ማስታወሻ"><select id="sf"><option value="all">ሁሉም</option><option value="soon">⚠️ በ10 ቀን የሚያበቁ</option><option value="none">🕓 ፈቃድ የሌላቸው</option><option value="exp">❌ ያበቁ</option><option value="act">✅ ንቁ</option></select><small>'+a.length+' መሣሪያዎች</small></div><div id="dp"></div>';
 $("rf").onclick=load;
 function draw(){var q=$("sq").value.trim().toLowerCase(),f=$("sf").value;$("dp").innerHTML="";
@@ -45,6 +45,6 @@ var nt=c.querySelector(".nt");nt.value=d.note||"";nt.onchange=async function(){t
 [].forEach.call(c.querySelectorAll("[data-p]"),function(b){b.onclick=async function(){try{var k=await api("/rest/v1/rpc/admin_make_key",{method:"POST",body:JSON.stringify({p_device:d.id,p_plan:b.dataset.p})});c.querySelector(".kb").innerHTML='<div class="k">'+esc(k)+'</div><small>የ'+PN[b.dataset.p]+' ፈቃድ ቁልፍ። አሁን ይቅዱት፤ ከዚህ በኋላ አይታይም። አንድ ጊዜ ብቻ፣ ለዚህ መሣሪያ ብቻ ይሠራል።</small>'}catch(e){msg("ቁልፍ መፍጠር አልተቻለም")}}});
 c.querySelector("[data-a=rv]").onclick=async function(){if(d.status!=="revoked"&&!confirm("ይህ መሣሪያ ይከለከል?"))return;try{await api("/rest/v1/devices?id=eq."+d.id,{method:"PATCH",body:JSON.stringify({status:d.status==="revoked"?"registered":"revoked"})});load()}catch(e){msg("አልተሳካም")}};
 $("dp").appendChild(c)})}
-draw();$("sq").oninput=draw;$("sf").onchange=draw}
+draw();if(!a.length)$("dp").innerHTML='<div class="c">እስካሁን የሚታይ የተመዘገበ መሣሪያ የለም።</div>';$("sq").oninput=draw;$("sf").onchange=draw}
 login();
 </script></body></html>
