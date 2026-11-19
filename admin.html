@@ -16,7 +16,7 @@ small{opacity:.75}#m{min-height:1.4em;color:var(--ac)}
 </style></head><body><div class="w">
 <h1>🔑 የአስተዳዳሪ ገጽ — እባብና መሰላል</h1><div id="m"></div><div id="v"></div></div>
 <script>
-var SB="https://juznfdhwrhdrjaorkieh.supabase.co",KEY="PASTE_ANON_KEY_HERE",tok=null,KS={};
+var SB="https://nwpllkjuqtpqkyhyenvf.supabase.co",KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53cGxsa2p1cXRwcWt5aHllbnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNTYyMTksImV4cCI6MjExMDYzMjIxOX0.UPMbqp-k9Zc1jC5f9xSnmpSnS8fJEm9ZRxbQU3O2O0k",tok=null,KS={};
 var $=function(i){return document.getElementById(i)};
 function msg(t){$("m").textContent=t||""}
 async function api(p,o){o=o||{};o.headers=Object.assign({apikey:KEY,Authorization:"Bearer "+(tok||KEY),"Content-Type":"application/json"},o.headers||{});var r=await fetch(SB+p,o),t=await r.text(),j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw j||{message:r.status};return j}
