@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>እባብና መሰላል</title>
+<style>
+:root{--bg:#fff8e7;--card:#fff;--ink:#3b2f2f;--ac:#ff7a59;--line:#e8dcc0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a2433;--card:#3a3246;--ink:#f6efe3;--ac:#ff8f70;--line:#55496a}}
+:root[data-theme="dark"]{--bg:#2a2433;--card:#3a3246;--ink:#f6efe3;--ac:#ff8f70;--line:#55496a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans Ethiopic","Abyssinica SIL",system-ui,sans-serif;text-align:center;padding:10px}
+h1{font-size:1.5rem;margin:8px 0}
+button{font:inherit;font-size:1.2rem;border:3px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:10px 16px;cursor:pointer}
+button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+button:disabled{opacity:.5}
+.big{font-size:1.5rem;padding:14px 26px}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:10px auto}
+#game{display:none;max-width:560px;margin:auto}
+#bar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.pc{padding:4px 10px;border-radius:14px;border:3px solid var(--line);background:var(--card);font-size:.95rem}
+.pc.me{border-color:var(--ac);font-weight:bold}
+#msg{min-height:1.6em;font-size:1.1rem;margin:6px 0}
+svg{display:block;width:100%;height:auto}
+#bd{border:3px solid var(--line);border-radius:12px;background:#fff}
+.tk{transition:transform .18s}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;z-index:9}
+.ov.on{display:flex}
+.card{background:var(--card);color:var(--ink);border-radius:20px;padding:18px;max-width:400px;width:100%;max-height:88vh;overflow-y:auto}
+.qt{font-size:1.4rem;margin-bottom:12px}
+.card button{display:block;width:100%;margin:8px 0}
+.ok{background:#43a047!important;color:#fff;border-color:#43a047!important}
+.no{background:#e53935!important;color:#fff;border-color:#e53935!important}
+#lic{position:fixed;inset:0;background:var(--bg);color:var(--ink);z-index:40;overflow:auto;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;font-size:1.15rem}#lic input{font:inherit;padding:12px;border-radius:12px;border:2px solid var(--line);width:100%;max-width:320px;background:var(--card);color:var(--ink);text-align:center}#lic code,#lb{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:4px 10px}#lb{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:15;font-size:.95rem}#lic small{opacity:.75;max-width:320px}
+</style>
+</head>
+<body>
+<div id="setup">
+<h1>🐍 እባብና መሰላል 🪜</h1>
+<div>የጨዋታ ዓይነት</div>
+<div class="row" id="mm"><button data-m="c">🎲 ክላሲክ</button><button data-m="k" class="on">🧒 ለልጆች</button><button data-m="y">🧑 ለወጣቶች</button></div>
+<div>ተጫዋቾች</div>
+<div class="row" id="pp"><button data-p="2" class="on">2</button><button data-p="3">3</button><button data-p="4">4</button></div>
+<button id="go" class="big">▶️ ጀምር</button><div class="row"><button id="rl">📖 የጨዋታውን ሕግ አሳይ</button></div>
+<p style="font-size:.95rem;opacity:.85">🎲 <b>ክላሲክ</b>፦ ጥያቄ የለም፤ መሰላል ከታች ወደ ላይ ያወጣል፣ እባብ ወደ ታች ያወርዳል።<br>🧒 <b>ለልጆች</b>፦ እባብ ላይ ሲደርሱ ጥያቄ ይመጣል፤ በትክክል ከመለሱ እባቡ አይነክስም።<br>🧑 <b>ለወጣቶች</b>፦ ጥያቄ የለም፤ መሰላል ከታች ሲገቡ ያወጣል፣ ከጫፉ ላይ ሲደርሱ ደግሞ ወደ ታች ያወርዳል፤ እባብም ያወርዳል።</p>
+</div>
+<div id="game">
+<div id="bar"></div>
+<div id="msg"></div>
+<svg id="bd" viewBox="0 0 600 600"></svg>
+<div class="row"><div id="die" style="width:72px"></div><button id="roll" class="big">🎲 ጣል</button><button id="rl2" aria-label="rules">📖</button><button id="home" aria-label="home">🏠</button></div>
+</div>
+<canvas id="fw" style="display:none;position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10"></canvas>
+<div class="ov" id="ov"><div class="card" id="cd"></div></div>
+<script>
+var $=function(i){return document.getElementById(i)},sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+var F={4:25,13:46,33:49,42:63,50:69,62:81,74:92},R={},S={99:41,89:53,76:58,66:45,54:31,43:18,40:3,27:5};
+Object.keys(F).forEach(function(a){R[F[a]]=+a});
+var mode="k",np=2,pos=[],cur=0,busy=false,over=false,asked=[],bag=[];
+var PL=[["🔴","ቀይ","#e53935"],["🔵","ሰማያዊ","#1e88e5"],["🟢","አረንጓዴ","#43a047"],["🟡","ቢጫ","#fdd835"]],OF=[[-9,-9],[9,-9],[-9,9],[9,9]];
+var CC=["#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#ec407a"],SC=["#ec407a","#43a047","#8e24aa","#e53935","#1e88e5","#fb8c00","#26a69a","#f4511e"];
+var Q=["2 + 3 = ?|5|4|6", "5 − 2 = ?|3|2|4", "የኢትዮጵያ ዋና ከተማ ማን ናት?|አዲስ አበባ|ባሕር ዳር|ሐዋሳ", "ሰማይ ምን ቀለም ነው?|ሰማያዊ|ቀይ|ጥቁር", "ላም ምን ትሰጠናለች?|ወተት|እንቁላል|ማር", "ሳምንት ስንት ቀን አለው?|7|5|10", "ድመት ስንት እግር አላት?|4|2|6", "ከመብላት በፊት ምን እናደርጋለን?|እጃችንን እንታጠባለን|እንተኛለን|እንሮጣለን", "አንበሳ የትኛው ነው?|🦁|🐘|🐟", "እንቁላል የሚሰጠን የትኛው ነው?|ዶሮ|ላም|ፈረስ", "10 − 4 = ?|6|5|7", "ስጦታ ሲሰጡን ምን እንላለን?|አመሰግናለሁ|አልፈልግም|ሂድ", "4 + 4 = ?|8|6|9", "1 + 1 = ?|2|3|1", "3 + 4 = ?|7|6|8", "6 + 2 = ?|8|7|9", "9 − 5 = ?|4|3|5", "7 − 3 = ?|4|5|3", "2 + 2 + 2 = ?|6|4|5", "10 − 7 = ?|3|2|4", "5 + 5 = ?|10|9|11", "3 + 3 = ?|6|5|7", "6 + 4 = ?|10|9|8", "9 − 3 = ?|6|7|5", "ዶሮ ስንት እግር አላት?|2|4|6", "ዓሣ የሚኖረው የት ነው?|ውኃ ውስጥ|ዛፍ ላይ|ሰማይ ላይ", "ንብ ምን ትሰጠናለች?|ማር|ወተት|እንቁላል", "አንገቱ በጣም ረጅም የሆነው የትኛው ነው?|🦒|🐇|🐢", "ከሁሉም የሚበልጠው የትኛው ነው?|🐘 ዝሆን|🐭 አይጥ|🐜 ጉንዳን", "ፈረስ ምን ይበላል?|ሣር|ድንጋይ|ብረት", "የዱር እንስሳ የትኛው ነው?|አንበሳ|ላም|በግ", "የሚበር የትኛው ነው?|🐦 ወፍ|🐘 ዝሆን|🐢 ዔሊ", "ቀስ በቀስ የሚሄድ እንስሳ የትኛው ነው?|🐢 ዔሊ|🐆 ነብር|🐇 ጥንቸል", "የኢትዮጵያ ባንዲራ ቀለሞች የትኞቹ ናቸው?|አረንጓዴ፣ ቢጫ፣ ቀይ|ሰማያዊ፣ ነጭ፣ ጥቁር|ሐምራዊ፣ ብርቱካናማ፣ ግራጫ", "እንጀራ ከምን ይሠራል?|ከጤፍ|ከድንጋይ|ከወተት", "የላሊበላ ቤተ ክርስቲያኖች ከምን ተሠርተዋል?|ከድንጋይ|ከበረዶ|ከወረቀት", "አባይ ምንድን ነው?|ወንዝ|ተራራ|ከተማ", "ከመስከረም በኋላ የሚመጣው ወር የትኛው ነው?|ጥቅምት|ጥር|ሰኔ", "በኢትዮጵያ አንድ ዓመት ስንት ወር አለው?|13|12|10", "ኢትዮጵያ የምትገኘው በየትኛው አህጉር ነው?|አፍሪካ|አውሮፓ|እስያ", "ቡና መጀመሪያ የተገኘባት አገር የትኛዋ ናት?|ኢትዮጵያ|ጃፓን|ካናዳ", "ጥርሳችንን መቼ እንቦርሻለን?|ጠዋትና ማታ|በዓመት አንድ ጊዜ|በጭራሽ", "ስንት ዓይኖች አሉን?|2|1|3", "ለማየት የምንጠቀመው የትኛውን ነው?|ዓይን|ጆሮ|አፍንጫ", "ለመስማት የምንጠቀመው የትኛውን ነው?|ጆሮ|ዓይን|እጅ", "ሰው ሲያወራ ምን እናደርጋለን?|እናዳምጣለን|እንጮኻለን|እንሸሻለን", "አዛውንት ሲመጡ ምን እናደርጋለን?|ቦታ እንሰጣለን|እንሮጣለን|እናሾፋለን", "ስህተት ስንሠራ ምን እንላለን?|ይቅርታ|አልሠራሁም ብሎ መካድ|ምንም", "ጓደኛችን ሲወድቅ ምን እናደርጋለን?|እናነሣዋለን|እንስቃለን|እንሮጣለን", "ለጤና የተሻለው የትኛው ነው?|🍎 ፖም|🍬 ከረሜላ|🍟 ጥብስ", "ሙዝ ምን ቀለም ነው?|ቢጫ|ሰማያዊ|ሐምራዊ", "ሣር ምን ቀለም ነው?|አረንጓዴ|ቀይ|ነጭ", "ቲማቲም ምን ቀለም ነው?|ቀይ|ሰማያዊ|ጥቁር", "ክብ ቅርጽ ያለው የትኛው ነው?|⚽ ኳስ|🧱 ጡብ|📦 ሳጥን", "ሦስት ማዕዘን ስንት ጎን አለው?|3|4|5", "አራት ማዕዘን ስንት ጎን አለው?|4|3|5", "ቀስተ ደመና ስንት ቀለም አለው?|7|3|12", "ፀሐይ መቼ ትወጣለች?|ጠዋት|እኩለ ሌሊት|ማታ", "ከቅዳሜ በኋላ የሚመጣው ቀን?|እሑድ|ሰኞ|ዓርብ", "ከሰኞ በኋላ የሚመጣው ቀን?|ማክሰኞ|ረቡዕ|ሐሙስ", "ከዓርብ በፊት ያለው ቀን?|ሐሙስ|ቅዳሜ|ሰኞ", "በሌሊት ምን እናደርጋለን?|እንተኛለን|ትምህርት ቤት እንሄዳለን|ኳስ እንጫወታለን", "ዶክተር ምን ያደርጋል?|የታመሙትን ያክማል|ዳቦ ይጋግራል|መኪና ይነዳል", "መምህር ምን ያደርጋል?|ያስተምራል|ያርሳል|ይሸጣል"].map(function(s){return s.split("|")});
+function xy(n){var r=Math.floor((n-1)/10),c=r%2?9-(n-1)%10:(n-1)%10;return[c*60+30,(9-r)*60+30]}
+function ladder(a,b){var p=xy(a),q=xy(b),dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy*9,ny=ux*9,s="";
+[[7,"#5d3a1a"],[4,"#b9783a"]].forEach(function(w){[-1,1].forEach(function(k){s+='<line x1="'+(p[0]+k*nx)+'" y1="'+(p[1]+k*ny)+'" x2="'+(q[0]+k*nx)+'" y2="'+(q[1]+k*ny)+'" stroke="'+w[1]+'" stroke-width="'+w[0]+'" stroke-linecap="round"/>'})});
+for(var t=14;t<L-8;t+=20){var cx=p[0]+ux*t,cy=p[1]+uy*t;s+='<line x1="'+(cx-nx)+'" y1="'+(cy-ny)+'" x2="'+(cx+nx)+'" y2="'+(cy+ny)+'" stroke="#8d5a2b" stroke-width="4"/>'}
+return s}
+function snake(h,t,i){var p=xy(h),q=xy(t),dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy),nx=-dy/L*24,ny=dx/L*24,g=i%2?1:-1,col=SC[i%SC.length];
+var d="M"+p[0]+" "+p[1]+" C"+(p[0]+dx/3+g*nx)+" "+(p[1]+dy/3+g*ny)+" "+(p[0]+2*dx/3-g*nx)+" "+(p[1]+2*dy/3-g*ny)+" "+q[0]+" "+q[1];
+return '<path d="'+d+'" fill="none" stroke="#2b2b2b" stroke-width="15" stroke-linecap="round"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="10" stroke-linecap="round"/><path d="'+d+'" fill="none" stroke="#ffffffaa" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="14" fill="'+col+'" stroke="#2b2b2b" stroke-width="2"/><circle cx="'+(p[0]-5)+'" cy="'+(p[1]-4)+'" r="4.5" fill="#fff"/><circle cx="'+(p[0]+5)+'" cy="'+(p[1]-4)+'" r="4.5" fill="#fff"/><circle cx="'+(p[0]-5)+'" cy="'+(p[1]-4)+'" r="2" fill="#222"/><circle cx="'+(p[0]+5)+'" cy="'+(p[1]-4)+'" r="2" fill="#222"/>'}
+function board(){var s="",n,p;for(n=1;n<=100;n++){p=xy(n);var r=Math.floor((n-1)/10),c=p[0]/60|0;s+='<rect x="'+(p[0]-30)+'" y="'+(p[1]-30)+'" width="60" height="60" fill="'+CC[(c+2*r)%7]+'"/><text x="'+(p[0]-26)+'" y="'+(p[1]-14)+'" font-size="15" font-weight="bold" fill="#fff" stroke="#0007" stroke-width=".6">'+n+'</text>'}
+Object.keys(F).forEach(function(a){s+=ladder(+a,F[a])});
+Object.keys(S).forEach(function(h,i){s+=snake(+h,S[h],i)});
+for(var i=0;i<np;i++)s+='<g class="tk" id="t'+i+'"><circle r="21" fill="'+PL[i][2]+'" stroke="#222" stroke-width="3"/><text y="8.5" text-anchor="middle" font-size="24.5" font-weight="bold" fill="'+(i===3?"#222":"#fff")+'">'+(i+1)+'</text></g>';
+$("bd").innerHTML=s;for(i=0;i<np;i++)put(i,0,0)}
+function put(i,n,ms){var g=$("t"+i),p=xy(Math.max(n,1)),o=OF[i];g.style.transition="transform "+ms+"ms";g.style.transform="translate("+(p[0]+o[0])+"px,"+(p[1]+o[1])+"px)"}
+function die(v){var P={1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],4:[[0,0],[2,0],[0,2],[2,2]],5:[[0,0],[2,0],[1,1],[0,2],[2,2]],6:[[0,0],[2,0],[0,1],[2,1],[0,2],[2,2]]},s='<svg viewBox="0 0 72 72"><rect x="3" y="3" width="66" height="66" rx="14" fill="#fff" stroke="#333" stroke-width="3"/>';
+P[v].forEach(function(q){s+='<circle cx="'+(18+q[0]*18)+'" cy="'+(18+q[1]*18)+'" r="6" fill="#222"/>'});$("die").innerHTML=s+'</svg>'}
+function msg(t){$("msg").textContent=t}
+function bar(){$("bar").innerHTML="";for(var i=0;i<np;i++){var d=document.createElement("div");d.className="pc"+(i===cur&&!over?" me":"");d.textContent=PL[i][0]+" "+pos[i];$("bar").appendChild(d)}}
+function show(h){$("cd").innerHTML=h;$("ov").classList.add("on")}
+function hideOv(){$("ov").classList.remove("on")}
+function ask(){return new Promise(function(res){if(!bag.length)bag=Q.map(function(_,i){return i}).sort(function(){return Math.random()-.5});var k=bag.pop();
+var q=Q[k],o=[q[1],q[2],q[3]].sort(function(){return Math.random()-.5});
+show('<div class="qt">🐍 '+q[0]+'</div>');
+o.forEach(function(t){var b=document.createElement("button");b.textContent=t;b.onclick=async function(){var good=t===q[1];[].forEach.call($("cd").querySelectorAll("button"),function(x){x.disabled=true;if(x.textContent===q[1])x.classList.add("ok")});if(!good)b.classList.add("no");await sleep(1100);hideOv();res(good)};$("cd").appendChild(b)})})}
+async function roll(){var v;for(var i=0;i<8;i++){v=1+Math.floor(Math.random()*6);die(v);await sleep(80)}v=1+Math.floor(Math.random()*6);die(v);return v}
+async function play(){if(busy||over)return;busy=true;$("roll").disabled=true;var i=cur,d=await roll(),n=pos[i]+d,nm=PL[i][0]+" "+PL[i][1];
+if(n>100){msg(nm+"፦ ከ100 በላይ ነው፤ ተራ አለፈ")}
+else{for(var k=pos[i]+1;k<=n;k++){put(i,k,180);await sleep(200)}pos[i]=n;bar();
+if(n===100){over=true;bar();show('<div style="font-size:3rem">🎉</div><div class="qt">'+nm+' አሸነፈ!</div><button class="big on" id="again">🔄 እንደገና</button>');celebrate();$("again").onclick=function(){stopCel();hideOv();start()};busy=false;return}
+if(F[n]){msg("🪜 መሰላል! ወደ ላይ ወጣ");await sleep(500);put(i,F[n],700);pos[i]=F[n];await sleep(800)}
+else if(mode==="y"&&R[n]){msg("🪜 ከመሰላሉ ጫፍ ወደ ታች ወረደ");await sleep(500);put(i,R[n],700);pos[i]=R[n];await sleep(800)}
+else if(S[n]){var slide=true;if(mode==="k"){var ok=await ask();if(ok){slide=false;msg("✅ ትክክል! እባቡ አልነከሰም")}else msg("❌ ስህተት! ወደ ታች ተንሸራተተ 🐍")}else msg("🐍 እባብ ነከሰ! ወደ ታች ወረደ");
+if(slide){await sleep(400);put(i,S[n],800);pos[i]=S[n];await sleep(900)}}
+else msg(nm+"፦ "+d)}
+if(d===6&&n<=100){msg("6 መጣ! ተጨማሪ ዕድል 🎲")}else{cur=(cur+1)%np}
+bar();busy=false;$("roll").disabled=false}
+function start(){pos=[];for(var i=0;i<np;i++)pos.push(0);cur=0;over=false;busy=false;asked=[];$("setup").style.display="none";$("game").style.display="block";board();bar();die(1);msg("የ "+PL[0][0]+" ተራ! 🎲 ን ጫን");$("roll").disabled=false}
+var AC=null,fwRun=false;
+var ODE=[[76,1],[76,1],[77,1],[79,1],[79,1],[77,1],[76,1],[74,1],[72,1],[72,1],[74,1],[76,1],[76,1.5],[74,.5],[74,2],[76,1],[76,1],[77,1],[79,1],[79,1],[77,1],[76,1],[74,1],[72,1],[72,1],[74,1],[76,1],[74,1.5],[72,.5],[72,2]];
+function stopCel(){fwRun=false;$("fw").style.display="none";if(AC){try{AC.close()}catch(e){}AC=null}}
+function celebrate(){stopCel();var c=$("fw"),x=c.getContext("2d"),ps=[],COL=["#ff1744","#ff9100","#ffea00","#00e676","#00b0ff","#d500f9","#ff4081","#ffffff"];
+c.width=innerWidth;c.height=innerHeight;c.style.display="block";fwRun=true;
+try{var AX=window.AudioContext||window.webkitAudioContext;AC=new AX();if(AC.state==="suspended")AC.resume()}catch(e){AC=null}
+if(AC){var t0=AC.currentTime+.3;ODE.forEach(function(n){var o=AC.createOscillator(),g=AC.createGain(),d=n[1]*.34;o.type="triangle";o.frequency.value=440*Math.pow(2,(n[0]-69)/12);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.11,t0+.03);g.gain.exponentialRampToValueAtTime(.001,t0+d*.95);o.connect(g);g.connect(AC.destination);o.start(t0);o.stop(t0+d);t0+=d})}
+function boom(){if(!AC)return;var t=AC.currentTime,n=Math.floor(AC.sampleRate*.6),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0),i;for(i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+var s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type="lowpass";f.frequency.value=500+Math.random()*700;g.gain.value=.5;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t)}
+function rocket(){if(!fwRun)return;var cx=c.width*(.15+Math.random()*.7),cy=c.height*(.12+Math.random()*.4);
+if(AC){var t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.setValueAtTime(500,t);o.frequency.exponentialRampToValueAtTime(1800,t+.35);g.gain.setValueAtTime(.04,t);g.gain.linearRampToValueAtTime(0,t+.36);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.4)}
+setTimeout(function(){if(!fwRun)return;boom();var a1=COL[Math.random()*COL.length|0],a2=COL[Math.random()*COL.length|0],i,a,sp;for(i=0;i<90;i++){a=Math.random()*6.283;sp=1.5+Math.random()*5.5;ps.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,l:1,c:i%2?a1:a2})}},350)}
+function loop(){if(!fwRun)return;x.globalCompositeOperation="destination-out";x.fillStyle="rgba(0,0,0,.22)";x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation="lighter";
+ps=ps.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.vx*=.985;p.l-=.011;if(p.l<=0)return false;x.globalAlpha=p.l;x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,2.6,0,6.283);x.fill();return true});x.globalAlpha=1;requestAnimationFrame(loop)}
+var k=0,iv=setInterval(function(){if(!fwRun||++k>22){clearInterval(iv);return}rocket();if(Math.random()<.4)setTimeout(rocket,160)},480);rocket();loop()}
+function showRules(){var L=Object.keys(F).map(function(a){return a+" ➜ "+F[a]}).join("፣ "),W=Object.keys(S).map(function(a){return a+" ➜ "+S[a]}).join("፣ ");
+show('<div style="text-align:left;line-height:1.7;font-size:1rem"><h2 style="margin:0 0 8px">📖 የጨዋታው ሕግ</h2>'
++'<b>🎯 ዓላማ</b><br>መጀመሪያ በትክክል 100 ላይ የደረሰ ያሸንፋል።<br><br>'
++'<b>🎲 አጀማመር</b><br>ከ2 እስከ 4 ተጫዋቾች ይጫወታሉ። ሁሉም ከቦርዱ ውጭ (0) ይጀምራሉ፤ ተራ በተራ አንድ ዳይስ (1–6) ይጥላሉ።<br><br>'
++'<b>👣 እንቅስቃሴ</b><br>በዳይሱ ቁጥር ልክ ሳጥን በሳጥን ወደ ፊት ይሄዳሉ። ቁጥሮቹ ከ1 (ከታች በግራ) ይጀምራሉ፤ ረድፍ ሲያልቅ ወደ ላይ ወጥተው አቅጣጫ ይቀየራል (ዚግዛግ)።<br><br>'
++'<b>6️⃣ ባለ 6</b><br>6 ሲመጣ ተጨማሪ ዕድል አለ፤ ተመልሰው ይጥላሉ። 6 ደጋግሞ ቢመጣ ዕድሉ ይቀጥላል።<br><br>'
++'<b>🪜 መሰላል</b> (ወደ ላይ)<br>'+L+'<br>ከታችኛው ጫፍ ላይ ሲደርሱ ወደ ላይ ያወጣል። <i>በ«ለወጣቶች» ዓይነት</i> ከላይኛው ጫፍ ላይ ሲደርሱ ደግሞ ወደ ታች ያወርዳል።<br><br>'
++'<b>🐍 እባብ</b> (ወደ ታች)<br>'+W+'<br>ራሱ ላይ ሲደርሱ እስከ ጭራው ያወርዳል። <i>በ«ለልጆች» ዓይነት</i> መጀመሪያ ጥያቄ ይመጣል፤ በትክክል ከመለሱ ባሉበት ይቆያሉ፣ ከተሳሳቱ ይወርዳሉ።<br><br>'
++'<b>🏁 100 ላይ መድረስ</b><br>ለማሸነፍ በትክክል 100 ላይ መድረስ አለብዎት። ዳይሱ ከ100 በላይ ካደረሰዎት አይንቀሳቀሱም፤ ተራው ወደ ቀጣዩ ይሄዳል።<br><br>'
++'<b>🎮 ሦስቱ ዓይነቶች</b><br>🎲 ክላሲክ፦ ያለ ጥያቄ፣ መሰላል ወደ ላይ ብቻ።<br>🧒 ለልጆች፦ እባብ ላይ ጥያቄ።<br>🧑 ለወጣቶች፦ ያለ ጥያቄ፣ መሰላል በሁለት አቅጣጫ።</div><button class="big on" id="rc">✖ ዝጋ</button>');$("rc").onclick=hideOv}
+$("rl").onclick=showRules;$("rl2").onclick=showRules;
+$("roll").onclick=play;
+$("home").onclick=function(){over=true;$("game").style.display="none";$("setup").style.display="block"};
+[].forEach.call($("mm").querySelectorAll("button"),function(b){b.onclick=function(){mode=b.dataset.m;[].forEach.call($("mm").children,function(x){x.classList.remove("on")});b.classList.add("on")}});
+[].forEach.call($("pp").querySelectorAll("button"),function(b){b.onclick=function(){np=+b.dataset.p;[].forEach.call($("pp").children,function(x){x.classList.remove("on")});b.classList.add("on")}});
+$("go").onclick=start;
+</script>
+<script>
+(function(){
+var SB="https://juznfdhwrhdrjaorkieh.supabase.co",KEY="PASTE_ANON_KEY_HERE";
+var L=document.createElement("div");L.id="lic";document.body.appendChild(L);
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+var code=ls("dev");
+if(!code){var u=(window.crypto&&crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+String(Date.now())).replace(/-/g,"").toUpperCase().slice(0,12);code=u.slice(0,4)+"-"+u.slice(4,8)+"-"+u.slice(8,12);ls("dev",code)}
+var EM=["መስከረም","ጥቅምት","ኅዳር","ታኅሣሥ","ጥር","የካቲት","መጋቢት","ሚያዝያ","ግንቦት","ሰኔ","ሐምሌ","ነሐሴ","ጳጉሜን"];
+function g2j(y,m,d){var a=Math.floor((14-m)/12),yy=y+4800-a,mm=m+12*a-3;return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045}
+function j2e(j){var r=(j-1723856)%1461,n=(r%365)+365*Math.floor(r/1460);return[4*Math.floor((j-1723856)/1461)+Math.floor(r/365)-Math.floor(r/1460),Math.floor(n/30)+1,(n%30)+1]}
+function eth(s){var d=new Date(s),e=j2e(g2j(d.getFullYear(),d.getMonth()+1,d.getDate()));return e[2]+" "+EM[e[1]-1]+" "+e[0]}
+async function rpc(fn,a){var r=await fetch(SB+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify(a)});var j=null;try{j=await r.json()}catch(e){}if(!r.ok)throw j||{message:"error"};return j}
+function show(html){L.style.display="flex";L.innerHTML=html}
+function g(i){return document.getElementById(i)}
+function hide(){L.style.display="none"}
+function info(ic,t,retry){show('<div style="font-size:3rem">'+ic+'</div><div>'+t+'</div><div>የመሣሪያ ኮድ፦ <code>'+code+'</code></div>'+(retry?'<button id="lr" class="big">🔄 ድጋሚ ፈትሽ</button>':''));if(retry)g("lr").onclick=run}
+function reg(){show('<div style="font-size:3rem">🐍🪜</div><div>ለመጫወት መጀመሪያ ይመዝገቡ። የወላጅ ኢሜል ያስገቡ</div><input id="le" type="email" placeholder="email@example.com"><button id="lg" class="big">ይመዝገቡ</button><div id="lm"></div><small>ኢሜልዎን ለፈቃድ ብቻ ነው የምንጠቀመው። የመሣሪያ ኮድ፦ '+code+'</small>');
+g("lg").onclick=async function(){var e=g("le").value.trim();g("lm").textContent="…";try{await rpc("register_device",{p_code:code,p_email:e});run()}catch(x){g("lm").textContent="ኢሜሉ ትክክል አይደለም ወይም መላክ አልተቻለም"}}}
+function keyScr(expired){show('<div style="font-size:3rem">'+(expired?"⏰":"🔑")+'</div><div>'+(expired?"ፈቃዱ አብቅቷል።":"ለመጫወት ፈቃድ ያስፈልጋል።")+' ክፍያ ከፈጸሙ በኋላ ከአስተዳዳሪው የተቀበሉትን የማረጋገጫ ቁልፍ ያስገቡ</div><input id="lk" placeholder="ቁልፍ"><button id="lg" class="big">ቁልፍ አስገባ</button><div id="lm"></div><div>የመሣሪያ ኮድ፦ <code>'+code+'</code></div><button id="lc">📋 ኮዱን ቅዳ</button><small>ቁልፉ የሚሠራው ለዚህ መሣሪያ ብቻ ነው። ኮዱን ለአስተዳዳሪው ይላኩ።</small>');
+g("lc").onclick=function(){try{navigator.clipboard.writeText(code);g("lc").textContent="✅ ተቀድቷል"}catch(e){}};
+g("lg").onclick=async function(){g("lm").textContent="…";try{await rpc("redeem_key",{p_code:code,p_key:g("lk").value});run()}catch(x){g("lm").textContent="ቁልፉ ትክክል አይደለም ወይም ተጠቅሞበታል"}}}
+function ok(exp){hide();var ms=new Date(exp)-Date.now(),b=document.createElement("div");b.id="lb";b.textContent=ms<172800000?"⏳ ፈቃዱ በ "+Math.max(1,Math.ceil(ms/36e5))+" ሰዓት ውስጥ ያበቃል":"✅ ፈቃድ እስከ "+eth(exp)+" ድረስ";document.body.appendChild(b);setTimeout(function(){b.remove()},6000)}
+async function run(){show('<div style="font-size:3rem">🔒</div><div>እየፈተሸ ነው…</div>');
+try{var rows=await rpc("check_device",{p_code:code}),d=rows&&rows[0];
+if(!d)return reg();
+if(d.status==="revoked")return info("🚫","ይህ መሣሪያ ታግዷል። አስተዳዳሪውን ያነጋግሩ።");
+if(d.active){ls("exp",d.expires_at);return ok(d.expires_at)}
+return keyScr(!!d.expires_at)}
+catch(e){var x=ls("exp");if(x&&new Date(x)>new Date()){hide();return}info("📡","ከበይነመረብ ጋር መገናኘት አልተቻለም።",true)}}
+setInterval(function(){var x=ls("exp");if(x&&new Date(x)<new Date()&&L.style.display==="none")run()},30000);
+run();
+})();
+</script>
+</body>
+</html>
